@@ -215,6 +215,81 @@ export const useTournamentStore = defineStore('tournament', () => {
     }
   }
 
+  function setMatchInProgressLocally(matchId: string) {
+    const target = matches.value.find((m) => m.id === matchId)
+    if (target && target.status === 'pending') {
+      target.status = 'in_progress'
+      if (activeEvent.value) {
+        saveBundleLocally({
+          event: activeEvent.value,
+          teams: teams.value,
+          matches: matches.value,
+          questions: questions.value,
+        })
+      }
+    }
+  }
+
+  function markBackupUsedLocally(questionId: string) {
+    const q = questions.value.find((item) => item.id === questionId)
+    if (q) {
+      q.is_used = 1
+    }
+    if (activeEvent.value) {
+      saveBundleLocally({
+        event: activeEvent.value,
+        teams: teams.value,
+        matches: matches.value,
+        questions: questions.value,
+      })
+    }
+  }
+
+  function completeMatchLocally(
+    matchId: string,
+    scoreA: number,
+    scoreB: number,
+    winnerId: string,
+    loserId: string
+  ) {
+    const target = matches.value.find((m) => m.id === matchId)
+    if (!target) return
+    target.score_a = scoreA
+    target.score_b = scoreB
+    target.winner_team_id = winnerId
+    target.loser_team_id = loserId
+    target.status = 'completed'
+
+    if (target.next_win_match_number && target.next_win_slot) {
+      const nextWin = matches.value.find(
+        (m) => m.match_number === target.next_win_match_number
+      )
+      if (nextWin) {
+        if (target.next_win_slot === 'A') nextWin.team_a_id = winnerId
+        else nextWin.team_b_id = winnerId
+      }
+    }
+
+    if (target.next_lose_match_number && target.next_lose_slot) {
+      const nextLose = matches.value.find(
+        (m) => m.match_number === target.next_lose_match_number
+      )
+      if (nextLose) {
+        if (target.next_lose_slot === 'A') nextLose.team_a_id = loserId
+        else nextLose.team_b_id = loserId
+      }
+    }
+
+    if (activeEvent.value) {
+      saveBundleLocally({
+        event: activeEvent.value,
+        teams: teams.value,
+        matches: matches.value,
+        questions: questions.value,
+      })
+    }
+  }
+
   return {
     events,
     activeEvent,
@@ -233,6 +308,9 @@ export const useTournamentStore = defineStore('tournament', () => {
     importQuestions,
     resetMatch,
     loadBundleFromLocal,
+    setMatchInProgressLocally,
+    markBackupUsedLocally,
+    completeMatchLocally,
   }
 })
 

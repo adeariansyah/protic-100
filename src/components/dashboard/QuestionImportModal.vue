@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { ref } from 'vue'
+import { CheckCircle2, Download } from 'lucide-vue-next'
 import type { ParsedQuestionInput, TeamCount } from '../../types'
 import {
   downloadTextFile,
@@ -79,10 +80,12 @@ function handleConfirmImport() {
 
       <div class="flex flex-wrap gap-2">
         <BrutalButton variant="blue" size="sm" @click="handleDownloadJson">
-          ⬇ Download Template JSON
+          <Download class="w-4 h-4" />
+          Download Template JSON
         </BrutalButton>
         <BrutalButton variant="purple" size="sm" @click="handleDownloadCsv">
-          ⬇ Download Template CSV
+          <Download class="w-4 h-4" />
+          Download Template CSV
         </BrutalButton>
       </div>
 
@@ -121,8 +124,9 @@ function handleConfirmImport() {
         v-else-if="parsedQuestions.length > 0"
         class="p-3.5 bg-[#00E5A0] border-[3px] border-black rounded-sm flex items-center justify-between flex-wrap gap-2"
       >
-        <div class="text-sm font-extrabold">
-          ✓ Validasi Lolos! Siap diimpor ke database D1.
+        <div class="text-sm font-extrabold inline-flex items-center gap-1.5">
+          <CheckCircle2 class="w-4 h-4" />
+          Validasi Lolos! Siap diimpor ke database D1.
         </div>
         <div class="flex gap-2">
           <BrutalBadge color="white">

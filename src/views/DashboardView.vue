@@ -1,6 +1,14 @@
 <script setup lang="ts">
 import { computed, onMounted, ref } from 'vue'
 import { useRouter } from 'vue-router'
+import {
+  AlertTriangle,
+  LogOut,
+  Monitor,
+  Plus,
+  Upload,
+  Users,
+} from 'lucide-vue-next'
 import { useAuthStore } from '../stores/authStore'
 import { useTournamentStore } from '../stores/tournamentStore'
 import type { ParsedQuestionInput, Team, TeamCount } from '../types'
@@ -123,9 +131,11 @@ async function handleLogout() {
 
         <div class="flex items-center gap-2.5 flex-wrap">
           <BrutalButton variant="blue" size="sm" @click="handleOpenPresenter">
-            📺 Buka Presenter View
+            <Monitor class="w-4 h-4" />
+            Buka Presenter View
           </BrutalButton>
           <BrutalButton variant="white" size="sm" @click="handleLogout">
+            <LogOut class="w-4 h-4" />
             Keluar ({{ auth.username ?? 'admin' }})
           </BrutalButton>
         </div>
@@ -162,17 +172,20 @@ async function handleLogout() {
             </select>
 
             <BrutalButton variant="green" size="sm" @click="showCreateEventModal = true">
-              + Buat Event Baru
+              <Plus class="w-4 h-4" />
+              Buat Event Baru
             </BrutalButton>
           </div>
         </div>
 
         <div v-if="tournament.activeEvent" class="flex items-center gap-2.5 flex-wrap">
           <BrutalButton variant="purple" size="sm" @click="showTeamSetupModal = true">
-            👥 Setup Tim & Bagan
+            <Users class="w-4 h-4" />
+            Setup Tim & Bagan
           </BrutalButton>
           <BrutalButton variant="yellow" size="sm" @click="showImportModal = true">
-            📥 Import Soal (.JSON / .CSV)
+            <Upload class="w-4 h-4" />
+            Import Soal (.JSON / .CSV)
           </BrutalButton>
         </div>
       </BrutalCard>
@@ -228,8 +241,9 @@ async function handleLogout() {
           v-if="!hasRequiredQuestions"
           class="p-4 bg-[#FFD100] border-[3px] border-black rounded-md brutal-shadow flex items-center justify-between flex-wrap gap-3"
         >
-          <p class="text-sm font-extrabold">
-            ⚠ Soal utama belum lengkap ({{ tournament.mainQuestionsCount }}/{{ requiredMainCount }}). Silakan import soal terlebih dahulu sebelum membuka Operator Console.
+          <p class="text-sm font-extrabold inline-flex items-center gap-2">
+            <AlertTriangle class="w-5 h-5 shrink-0" />
+            Soal utama belum lengkap ({{ tournament.mainQuestionsCount }}/{{ requiredMainCount }}). Silakan import soal terlebih dahulu sebelum membuka Operator Console.
           </p>
           <BrutalButton variant="black" size="sm" @click="showImportModal = true">
             Import Soal Sekarang

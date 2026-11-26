@@ -1,4 +1,6 @@
 <script setup lang="ts">
+import { X } from 'lucide-vue-next'
+
 defineProps<{
   open: boolean
   title: string
@@ -35,7 +37,7 @@ const emit = defineEmits<{
             aria-label="Tutup modal"
             @click="emit('close')"
           >
-            ✕
+            <X class="w-4 h-4 stroke-[3]" />
           </button>
         </div>
         <div class="p-5 overflow-y-auto">

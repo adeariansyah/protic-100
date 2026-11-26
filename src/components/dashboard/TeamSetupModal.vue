@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { ref, watch } from 'vue'
+import { Shuffle } from 'lucide-vue-next'
 import type { Team, TeamCount } from '../../types'
 import { shuffleTeams } from '../../utils/bracketGenerator'
 import BrutalModal from '../brutal/BrutalModal.vue'
@@ -64,7 +65,8 @@ function handleSave() {
           Edit nama tim atau klik <strong>Acak Bagan</strong> untuk mengundi posisi slot pertandingan awal.
         </p>
         <BrutalButton variant="purple" size="sm" @click="handleShuffle">
-          🎲 Acak Bagan (Shuffle)
+          <Shuffle class="w-4 h-4" />
+          Acak Bagan (Shuffle)
         </BrutalButton>
       </div>
 
