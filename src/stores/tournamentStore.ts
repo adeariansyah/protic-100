@@ -1,0 +1,238 @@
+import { defineStore } from 'pinia'
+import { computed, ref } from 'vue'
+import type {
+  EventData,
+  Match,
+  ParsedQuestionInput,
+  Question,
+  Team,
+  TeamCount,
+  TournamentBundle,
+} from '../types'
+
+const BUNDLE_STORAGE_KEY = 'protic100_active_bundle'
+const ACTIVE_EVENT_ID_KEY = 'protic100_active_event_id'
+
+export const useTournamentStore = defineStore('tournament', () => {
+  const events = ref<EventData[]>([])
+  const activeEvent = ref<EventData | null>(null)
+  const teams = ref<Team[]>([])
+  const matches = ref<Match[]>([])
+  const questions = ref<Question[]>([])
+
+  const loading = ref(false)
+  const error = ref<string | null>(null)
+
+  const mainQuestionsCount = computed(
+    () => questions.value.filter((q) => q.type === 'main').length
+  )
+  const backupQuestionsCount = computed(
+    () => questions.value.filter((q) => q.type === 'backup').length
+  )
+  const unusedBackupCount = computed(
+    () => questions.value.filter((q) => q.type === 'backup' && q.is_used === 0).length
+  )
+
+  function saveBundleLocally(bundle: TournamentBundle) {
+    localStorage.setItem(BUNDLE_STORAGE_KEY, JSON.stringify(bundle))
+    localStorage.setItem(ACTIVE_EVENT_ID_KEY, bundle.event.id)
+  }
+
+  function loadBundleFromLocal(): boolean {
+    const raw = localStorage.getItem(BUNDLE_STORAGE_KEY)
+    if (!raw) return false
+    try {
+      const parsed = JSON.parse(raw) as TournamentBundle
+      activeEvent.value = parsed.event
+      teams.value = parsed.teams
+      matches.value = parsed.matches
+      questions.value = parsed.questions
+      return true
+    } catch {
+      return false
+    }
+  }
+
+  async function fetchEvents(): Promise<void> {
+    loading.value = true
+    error.value = null
+    try {
+      const res = await fetch('/api/events', { credentials: 'include' })
+      if (!res.ok) throw new Error('Gagal memuat daftar event')
+      const data = (await res.json()) as { events: EventData[] }
+      events.value = data.events
+
+      const savedId = localStorage.getItem(ACTIVE_EVENT_ID_KEY)
+      const target =
+        events.value.find((e) => e.id === savedId) ?? events.value[0] ?? null
+      if (target) {
+        await selectEvent(target.id)
+      }
+    } catch (err) {
+      error.value = err instanceof Error ? err.message : 'Gagal memuat event'
+      loadBundleFromLocal()
+    } finally {
+      loading.value = false
+    }
+  }
+
+  async function selectEvent(eventId: string): Promise<void> {
+    loading.value = true
+    error.value = null
+    try {
+      const res = await fetch(`/api/events/${eventId}/bundle`, {
+        credentials: 'include',
+      })
+      if (!res.ok) throw new Error('Gagal mengunduh bundel event')
+      const bundle = (await res.json()) as TournamentBundle
+      activeEvent.value = bundle.event
+      teams.value = bundle.teams
+      matches.value = bundle.matches
+      questions.value = bundle.questions
+      saveBundleLocally(bundle)
+    } catch (err) {
+      error.value = err instanceof Error ? err.message : 'Gagal memuat bundel'
+      loadBundleFromLocal()
+    } finally {
+      loading.value = false
+    }
+  }
+
+  async function createEvent(payload: {
+    name: string
+    team_count: TeamCount
+    timer_seconds: number
+  }): Promise<EventData | null> {
+    loading.value = true
+    error.value = null
+    try {
+      const res = await fetch('/api/events', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify(payload),
+      })
+      const data = (await res.json()) as { event?: EventData; error?: string }
+      if (!res.ok || !data.event) {
+        error.value = data.error ?? 'Gagal membuat event baru'
+        return null
+      }
+      events.value = [data.event, ...events.value]
+      await selectEvent(data.event.id)
+      return data.event
+    } catch {
+      error.value = 'Tidak dapat terhubung ke server'
+      return null
+    } finally {
+      loading.value = false
+    }
+  }
+
+  async function updateTeams(updatedTeams: Team[]): Promise<boolean> {
+    if (!activeEvent.value) return false
+    loading.value = true
+    error.value = null
+    try {
+      const res = await fetch(`/api/events/${activeEvent.value.id}/teams`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify({
+          teams: updatedTeams.map((t) => ({
+            id: t.id,
+            name: t.name,
+            seed_order: t.seed_order,
+          })),
+        }),
+      })
+      const data = (await res.json()) as { ok?: boolean; error?: string }
+      if (!res.ok) {
+        error.value = data.error ?? 'Gagal menyimpan susunan tim'
+        return false
+      }
+      await selectEvent(activeEvent.value.id)
+      return true
+    } catch {
+      error.value = 'Gagal menghubungi server'
+      return false
+    } finally {
+      loading.value = false
+    }
+  }
+
+  async function importQuestions(
+    parsedQuestions: ParsedQuestionInput[]
+  ): Promise<boolean> {
+    if (!activeEvent.value) return false
+    loading.value = true
+    error.value = null
+    try {
+      const res = await fetch(
+        `/api/events/${activeEvent.value.id}/questions/import`,
+        {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          credentials: 'include',
+          body: JSON.stringify({ questions: parsedQuestions }),
+        }
+      )
+      const data = (await res.json()) as { ok?: boolean; error?: string }
+      if (!res.ok) {
+        error.value = data.error ?? 'Gagal mengimpor soal'
+        return false
+      }
+      await selectEvent(activeEvent.value.id)
+      return true
+    } catch {
+      error.value = 'Gagal menghubungi server'
+      return false
+    } finally {
+      loading.value = false
+    }
+  }
+
+  async function resetMatch(matchId: string): Promise<boolean> {
+    if (!activeEvent.value) return false
+    loading.value = true
+    error.value = null
+    try {
+      const res = await fetch(`/api/matches/${matchId}/reset`, {
+        method: 'POST',
+        credentials: 'include',
+      })
+      if (!res.ok) {
+        const data = (await res.json()) as { error?: string }
+        error.value = data.error ?? 'Gagal mereset match'
+        return false
+      }
+      await selectEvent(activeEvent.value.id)
+      return true
+    } catch {
+      error.value = 'Gagal menghubungi server'
+      return false
+    } finally {
+      loading.value = false
+    }
+  }
+
+  return {
+    events,
+    activeEvent,
+    teams,
+    matches,
+    questions,
+    loading,
+    error,
+    mainQuestionsCount,
+    backupQuestionsCount,
+    unusedBackupCount,
+    fetchEvents,
+    selectEvent,
+    createEvent,
+    updateTeams,
+    importQuestions,
+    resetMatch,
+    loadBundleFromLocal,
+  }
+})
+

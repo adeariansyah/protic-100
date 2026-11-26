@@ -1,0 +1,13 @@
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "protic-100",
+  "compatibility_date": "2026-01-01",
+  "pages_build_output_dir": "./dist",
+  "d1_databases": [
+    {
+      "binding": "DB",
+      "database_name": "protic-100-db",
+      "database_id": "fd4a72d5-8e8b-41d1-9f61-1759d92820a8",
+    },
+  ],
+}
