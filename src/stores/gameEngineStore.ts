@@ -1,5 +1,5 @@
 import { defineStore } from 'pinia'
-import { computed, ref } from 'vue'
+import { computed, ref, toRaw } from 'vue'
 import type { AnswerOption, Match, Question, Team } from '../types'
 import { useTournamentStore } from './tournamentStore'
 import { useSoundEffects } from '../composables/useSoundEffects'
@@ -13,7 +13,6 @@ import {
   type QuizBoardState,
   type WinnerBannerData,
 } from '../composables/useBroadcastSync'
-import { useOfflineQueue } from '../composables/useOfflineQueue'
 
 const MATCH_PROGRESS_KEY = 'protic100_match_progress'
 
@@ -41,7 +40,6 @@ export const useGameEngineStore = defineStore('gameEngine', () => {
   const tournament = useTournamentStore()
   const sound = useSoundEffects()
   const broadcast = useBroadcastSync()
-  const offlineQueue = useOfflineQueue()
 
   const initialControl = loadPresenterControlState()
   const presenterMode = ref<PresenterMode>(initialControl.presenterMode)
@@ -104,13 +102,12 @@ export const useGameEngineStore = defineStore('gameEngine', () => {
     }
   }
 
+  function clonePlain<T>(val: T): T {
+    return JSON.parse(JSON.stringify(toRaw(val))) as T
+  }
+
   function cloneQuestions(qs: LiveQuestionState[]): LiveQuestionState[] {
-    return qs.map((q) => ({
-      ...q,
-      answers: q.answers.map((a) => ({ ...a })),
-      revealed: [...q.revealed],
-      awardedTo: [...q.awardedTo],
-    }))
+    return clonePlain(qs)
   }
 
   function pushSnapshot() {
@@ -193,16 +190,21 @@ export const useGameEngineStore = defineStore('gameEngine', () => {
   }
 
   function publishControlTransition(quizState: QuizBoardState | null = null) {
+    const plainWinner = winnerBannerData.value
+      ? clonePlain(winnerBannerData.value)
+      : null
+    const plainQuiz = quizState ? clonePlain(quizState) : null
+
     savePresenterControlState({
       presenterMode: presenterMode.value,
       liveMatchId: liveMatchId.value,
-      winnerBannerData: winnerBannerData.value,
+      winnerBannerData: plainWinner,
     })
     const payload: LiveBroadcastPayload = {
       presenterMode: presenterMode.value,
       liveMatchId: liveMatchId.value,
-      winnerBannerData: winnerBannerData.value,
-      quizState,
+      winnerBannerData: plainWinner,
+      quizState: plainQuiz,
       updatedAt: Date.now(),
     }
     broadcast.publishState(payload)
@@ -601,21 +603,38 @@ export const useGameEngineStore = defineStore('gameEngine', () => {
     const winnerId = aWins ? teamA.value.id : teamB.value.id
     const loserId = aWins ? teamB.value.id : teamA.value.id
     const winnerTeamName = aWins ? teamA.value.name : teamB.value.name
+    const matchId = match.value.id
+    const matchName = `${match.value.round_name} — Match #${match.value.match_number}`
+    const teamAName = teamA.value.name
+    const teamBName = teamB.value.name
 
+    // 1. Buat plain object payload dan simpan ke localStorage + D1 (atau offlineQueue)
+    const plainPayload = {
+      score_a: Number(scoreA.value),
+      score_b: Number(scoreB.value),
+      winner_team_id: String(winnerId),
+      loser_team_id: String(loserId),
+      used_backup_question_ids: [...toRaw(usedBackupQuestionIds.value)].map(String),
+    }
+
+    const { syncedNow } = await tournament.completeMatch(matchId, plainPayload)
+    localStorage.removeItem(MATCH_PROGRESS_KEY)
+
+    // 2. Putar audio kemenangan, set winnerBannerData & ubah presenterMode ke 'winner'
     sound.playWin()
 
     winnerBannerData.value = {
-      matchName: `${match.value.round_name} — Match #${match.value.match_number}`,
+      matchName,
       winnerName: winnerTeamName,
-      scoreA: scoreA.value,
-      scoreB: scoreB.value,
-      teamAName: teamA.value.name,
-      teamBName: teamB.value.name,
+      scoreA: plainPayload.score_a,
+      scoreB: plainPayload.score_b,
+      teamAName,
+      teamBName,
     }
     presenterMode.value = 'winner'
     publishControlTransition(null)
 
-    // Setelah 5 detik (5000 ms), otomatis kembali ke mode 'standby'
+    // 3. Setelah 5 detik (5000 ms), otomatis kembali ke mode 'standby'
     winnerResetTimeout = window.setTimeout(() => {
       presenterMode.value = 'standby'
       liveMatchId.value = null
@@ -623,25 +642,6 @@ export const useGameEngineStore = defineStore('gameEngine', () => {
       publishControlTransition(null)
     }, 5000)
 
-    tournament.completeMatchLocally(
-      match.value.id,
-      scoreA.value,
-      scoreB.value,
-      winnerId,
-      loserId,
-      usedBackupQuestionIds.value
-    )
-
-    const { syncedNow } = await offlineQueue.submitMatchCompletion({
-      matchId: match.value.id,
-      score_a: scoreA.value,
-      score_b: scoreB.value,
-      winner_team_id: winnerId,
-      loser_team_id: loserId,
-      used_backup_question_ids: usedBackupQuestionIds.value,
-    })
-
-    localStorage.removeItem(MATCH_PROGRESS_KEY)
     return { ok: true, syncedNow }
   }
 

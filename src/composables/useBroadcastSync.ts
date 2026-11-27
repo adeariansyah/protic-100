@@ -1,3 +1,4 @@
+import { toRaw } from 'vue'
 import type { AnswerOption } from '../types'
 
 export const LIVE_CHANNEL_NAME = 'protic100_live_channel'
@@ -106,17 +107,26 @@ export function useBroadcastSync() {
       : null
 
   function publishState(payload: LiveBroadcastPayload) {
+    // Konversi ke plain object bebas Vue Proxy agar BroadcastChannel.postMessage tidak melempar DataCloneError
+    const plainPayload = JSON.parse(
+      JSON.stringify(toRaw(payload))
+    ) as LiveBroadcastPayload
+
     savePresenterControlState({
-      presenterMode: payload.presenterMode,
-      liveMatchId: payload.liveMatchId,
-      winnerBannerData: payload.winnerBannerData,
+      presenterMode: plainPayload.presenterMode,
+      liveMatchId: plainPayload.liveMatchId,
+      winnerBannerData: plainPayload.winnerBannerData,
     })
     try {
-      localStorage.setItem(LIVE_STATE_STORAGE_KEY, JSON.stringify(payload))
-    } catch {
-      // Ignore quota errors
+      localStorage.setItem(LIVE_STATE_STORAGE_KEY, JSON.stringify(plainPayload))
+    } catch (err) {
+      console.error('[useBroadcastSync] Gagal menyimpan ke localStorage:', err)
     }
-    channel?.postMessage({ type: 'STATE_UPDATE', payload })
+    try {
+      channel?.postMessage({ type: 'STATE_UPDATE', payload: plainPayload })
+    } catch (err) {
+      console.error('[useBroadcastSync] Gagal broadcast ke BroadcastChannel:', err)
+    }
   }
 
   function loadStoredState(): LiveBroadcastPayload {

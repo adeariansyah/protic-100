@@ -1,5 +1,6 @@
 import { defineStore } from 'pinia'
 import { computed, ref } from 'vue'
+import { useOfflineQueue } from '../composables/useOfflineQueue'
 import type {
   EventData,
   Match,
@@ -335,6 +336,40 @@ export const useTournamentStore = defineStore('tournament', () => {
     }
   }
 
+  async function completeMatch(
+    matchId: string,
+    payload: {
+      score_a: number
+      score_b: number
+      winner_team_id: string
+      loser_team_id: string
+      used_backup_question_ids: string[]
+    }
+  ): Promise<{ syncedNow: boolean }> {
+    const plainPayload = {
+      score_a: Number(payload.score_a),
+      score_b: Number(payload.score_b),
+      winner_team_id: String(payload.winner_team_id),
+      loser_team_id: String(payload.loser_team_id),
+      used_backup_question_ids: [...payload.used_backup_question_ids],
+    }
+
+    completeMatchLocally(
+      matchId,
+      plainPayload.score_a,
+      plainPayload.score_b,
+      plainPayload.winner_team_id,
+      plainPayload.loser_team_id,
+      plainPayload.used_backup_question_ids
+    )
+
+    const offlineQueue = useOfflineQueue()
+    return await offlineQueue.submitMatchCompletion({
+      matchId,
+      ...plainPayload,
+    })
+  }
+
   return {
     events,
     activeEvent,
@@ -356,6 +391,7 @@ export const useTournamentStore = defineStore('tournament', () => {
     setMatchInProgressLocally,
     markBackupUsedLocally,
     completeMatchLocally,
+    completeMatch,
   }
 })
 
