@@ -287,7 +287,8 @@ export const useTournamentStore = defineStore('tournament', () => {
     scoreA: number,
     scoreB: number,
     winnerId: string,
-    loserId: string
+    loserId: string,
+    usedBackupQuestionIds: string[] = []
   ) {
     const target = matches.value.find((m) => m.id === matchId)
     if (!target) return
@@ -296,6 +297,13 @@ export const useTournamentStore = defineStore('tournament', () => {
     target.winner_team_id = winnerId
     target.loser_team_id = loserId
     target.status = 'completed'
+
+    for (const qId of usedBackupQuestionIds) {
+      const q = questions.value.find((item) => item.id === qId)
+      if (q) {
+        q.is_used = 1
+      }
+    }
 
     if (target.next_win_match_number && target.next_win_slot) {
       const nextWin = matches.value.find(

@@ -62,7 +62,11 @@ const hasRequiredQuestions = computed(
 
 onMounted(async () => {
   await offlineQueue.flushQueue()
-  await tournament.fetchEvents()
+  if (offlineQueue.pendingCount.value === 0) {
+    await tournament.fetchEvents()
+  } else {
+    tournament.loadBundleFromLocal()
+  }
 })
 
 async function handleEventSelect(e: Event) {

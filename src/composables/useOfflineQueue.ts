@@ -45,8 +45,17 @@ async function sendToApi(item: CompleteMatchPayload): Promise<boolean> {
         used_backup_question_ids: item.used_backup_question_ids,
       }),
     })
-    return res.ok
-  } catch {
+    if (!res.ok) {
+      const errText = await res.text().catch(() => '')
+      console.error(
+        `[useOfflineQueue] Gagal sinkron match ${item.matchId} (HTTP ${res.status}):`,
+        errText
+      )
+      return false
+    }
+    return true
+  } catch (err) {
+    console.error(`[useOfflineQueue] Network error saat sinkron match ${item.matchId}:`, err)
     return false
   }
 }

@@ -445,12 +445,14 @@ export const useGameEngineStore = defineStore('gameEngine', () => {
     pushSnapshot()
     strikes.value = Math.min(3, strikes.value + 1)
     strikeOverlayTick.value += 1
+    // 1 Jawaban = 1 Siklus Timer: auto-pause & reset timer saat strike
+    stopTimerInterval()
+    timerRemaining.value = timerSeconds.value
     sound.playStrike()
     syncQuizBoardIfLive()
 
     // Jika mencapai 3/3 strikes, otomatis lempar giliran ke lawan setelah animasi X singkat
     if (strikes.value === 3) {
-      stopTimerInterval()
       clearAutoSwitchTimeout()
       autoSwitchTimeout = window.setTimeout(() => {
         activeTurn.value = activeTurn.value === 'A' ? 'B' : 'A'
@@ -564,6 +566,7 @@ export const useGameEngineStore = defineStore('gameEngine', () => {
     const snap = history.value.pop()
     if (!snap) return
     clearAutoSwitchTimeout()
+    stopTimerInterval()
     scoreA.value = snap.scoreA
     scoreB.value = snap.scoreB
     activeTurn.value = snap.activeTurn
@@ -625,7 +628,8 @@ export const useGameEngineStore = defineStore('gameEngine', () => {
       scoreA.value,
       scoreB.value,
       winnerId,
-      loserId
+      loserId,
+      usedBackupQuestionIds.value
     )
 
     const { syncedNow } = await offlineQueue.submitMatchCompletion({
