@@ -1,6 +1,6 @@
 <script setup lang="ts">
-import { computed, onMounted, ref } from 'vue'
-import { useRouter } from 'vue-router'
+import { computed, onMounted, ref } from "vue";
+import { useRouter } from "vue-router";
 import {
   AlertTriangle,
   LogOut,
@@ -8,71 +8,71 @@ import {
   Plus,
   Upload,
   Users,
-} from 'lucide-vue-next'
-import { useAuthStore } from '../stores/authStore'
-import { useTournamentStore } from '../stores/tournamentStore'
-import { useOfflineQueue } from '../composables/useOfflineQueue'
-import type { ParsedQuestionInput, Team, TeamCount } from '../types'
+} from "lucide-vue-next";
+import { useAuthStore } from "../stores/authStore";
+import { useTournamentStore } from "../stores/tournamentStore";
+import { useOfflineQueue } from "../composables/useOfflineQueue";
+import type { ParsedQuestionInput, Team, TeamCount } from "../types";
 import {
   computePodium,
   getRequiredMainQuestionsCount,
-} from '../utils/bracketGenerator'
-import BrutalCard from '../components/brutal/BrutalCard.vue'
-import BrutalButton from '../components/brutal/BrutalButton.vue'
-import BrutalBadge from '../components/brutal/BrutalBadge.vue'
-import BrutalModal from '../components/brutal/BrutalModal.vue'
-import BracketTree from '../components/dashboard/BracketTree.vue'
-import PodiumCard from '../components/dashboard/PodiumCard.vue'
-import TeamSetupModal from '../components/dashboard/TeamSetupModal.vue'
-import QuestionImportModal from '../components/dashboard/QuestionImportModal.vue'
+} from "../utils/bracketGenerator";
+import BrutalCard from "../components/brutal/BrutalCard.vue";
+import BrutalButton from "../components/brutal/BrutalButton.vue";
+import BrutalBadge from "../components/brutal/BrutalBadge.vue";
+import BrutalModal from "../components/brutal/BrutalModal.vue";
+import BracketTree from "../components/dashboard/BracketTree.vue";
+import PodiumCard from "../components/dashboard/PodiumCard.vue";
+import TeamSetupModal from "../components/dashboard/TeamSetupModal.vue";
+import QuestionImportModal from "../components/dashboard/QuestionImportModal.vue";
 
-const router = useRouter()
-const auth = useAuthStore()
-const tournament = useTournamentStore()
-const offlineQueue = useOfflineQueue()
+const router = useRouter();
+const auth = useAuthStore();
+const tournament = useTournamentStore();
+const offlineQueue = useOfflineQueue();
 
-const showCreateEventModal = ref(false)
-const showTeamSetupModal = ref(false)
-const showImportModal = ref(false)
+const showCreateEventModal = ref(false);
+const showTeamSetupModal = ref(false);
+const showImportModal = ref(false);
 
-const newEventName = ref('')
-const newEventTeamCount = ref<TeamCount>(8)
-const newEventTimer = ref(20)
+const newEventName = ref("");
+const newEventTeamCount = ref<TeamCount>(8);
+const newEventTimer = ref(20);
 
 const podium = computed(() => {
-  if (!tournament.activeEvent) return null
+  if (!tournament.activeEvent) return null;
   return computePodium(
     tournament.matches,
     tournament.teams,
-    tournament.activeEvent.team_count
-  )
-})
+    tournament.activeEvent.team_count,
+  );
+});
 
 const requiredMainCount = computed(() =>
   tournament.activeEvent
     ? getRequiredMainQuestionsCount(tournament.activeEvent.team_count)
-    : 0
-)
+    : 0,
+);
 
 const hasRequiredQuestions = computed(
   () =>
     requiredMainCount.value > 0 &&
-    tournament.mainQuestionsCount >= requiredMainCount.value
-)
+    tournament.mainQuestionsCount >= requiredMainCount.value,
+);
 
 onMounted(async () => {
-  await offlineQueue.flushQueue()
+  await offlineQueue.flushQueue();
   if (offlineQueue.pendingCount.value === 0) {
-    await tournament.fetchEvents()
+    await tournament.fetchEvents();
   } else {
-    tournament.loadBundleFromLocal()
+    tournament.loadBundleFromLocal();
   }
-})
+});
 
 async function handleEventSelect(e: Event) {
-  const target = e.target as HTMLSelectElement
+  const target = e.target as HTMLSelectElement;
   if (target.value) {
-    await tournament.selectEvent(target.value)
+    await tournament.selectEvent(target.value);
   }
 }
 
@@ -81,46 +81,46 @@ async function handleCreateEvent() {
     name: newEventName.value,
     team_count: newEventTeamCount.value,
     timer_seconds: newEventTimer.value,
-  })
+  });
   if (created) {
-    showCreateEventModal.value = false
-    newEventName.value = ''
-    newEventTeamCount.value = 8
-    newEventTimer.value = 20
+    showCreateEventModal.value = false;
+    newEventName.value = "";
+    newEventTeamCount.value = 8;
+    newEventTimer.value = 20;
   }
 }
 
 async function handleSaveTeams(updatedTeams: Team[]) {
-  const ok = await tournament.updateTeams(updatedTeams)
+  const ok = await tournament.updateTeams(updatedTeams);
   if (ok) {
-    showTeamSetupModal.value = false
+    showTeamSetupModal.value = false;
   }
 }
 
 async function handleImportQuestions(questions: ParsedQuestionInput[]) {
-  const ok = await tournament.importQuestions(questions)
+  const ok = await tournament.importQuestions(questions);
   if (ok) {
-    showImportModal.value = false
+    showImportModal.value = false;
   }
 }
 
 function handleOpenPresenter() {
-  window.open('/presenter', '_blank')
+  window.open("/presenter", "_blank");
 }
 
 function handleStartMatch(matchId: string) {
-  router.push(`/operator/${matchId}`)
+  router.push(`/operator/${matchId}`);
 }
 
 async function handleResetMatch(matchId: string) {
-  if (confirm('Reset skor dan status match ini ke pending?')) {
-    await tournament.resetMatch(matchId)
+  if (confirm("Reset skor dan status match ini ke pending?")) {
+    await tournament.resetMatch(matchId);
   }
 }
 
 async function handleLogout() {
-  await auth.logout()
-  await router.push('/login')
+  await auth.logout();
+  await router.push("/login");
 }
 </script>
 
@@ -128,12 +128,17 @@ async function handleLogout() {
   <div class="min-h-screen pb-16">
     <!-- Top Header -->
     <header class="bg-[#FFD100] border-b-4 border-black px-4 md:px-8 py-4">
-      <div class="max-w-6xl mx-auto flex items-center justify-between flex-wrap gap-4">
+      <div
+        class="max-w-6xl mx-auto flex items-center justify-between flex-wrap gap-4"
+      >
         <div class="flex items-center gap-3">
-          <h1 class="text-2xl md:text-3xl font-extrabold uppercase tracking-tight">
-            PROTIC <span class="bg-[#00E5A0] px-2 border-2 border-black">100</span>
+          <h1
+            class="text-2xl md:text-3xl font-extrabold uppercase tracking-tight"
+          >
+            PROTIC
+            <span class="bg-[#00E5A0] px-2 border-2 border-black">100</span>
           </h1>
-          <BrutalBadge color="white">Operator Dashboard</BrutalBadge>
+          <BrutalBadge color="white">Dashboard Operator</BrutalBadge>
         </div>
 
         <div class="flex items-center gap-2.5 flex-wrap">
@@ -143,7 +148,7 @@ async function handleLogout() {
           </BrutalButton>
           <BrutalButton variant="white" size="sm" @click="handleLogout">
             <LogOut class="w-4 h-4" />
-            Keluar ({{ auth.username ?? 'admin' }})
+            Logout
           </BrutalButton>
         </div>
       </div>
@@ -159,9 +164,13 @@ async function handleLogout() {
       </div>
 
       <!-- Event Control Bar -->
-      <BrutalCard class="flex flex-col md:flex-row md:items-center justify-between gap-4">
+      <BrutalCard
+        class="flex flex-col md:flex-row md:items-center justify-between gap-4"
+      >
         <div class="flex-1 space-y-1">
-          <label class="block text-xs font-extrabold uppercase text-neutral-600">
+          <label
+            class="block text-xs font-extrabold uppercase text-neutral-600"
+          >
             Event Turnamen Aktif (Tersimpan Offline)
           </label>
           <div class="flex items-center gap-3 flex-wrap">
@@ -173,37 +182,65 @@ async function handleLogout() {
               <option v-if="tournament.events.length === 0" value="">
                 Belum ada event — Buat event baru
               </option>
-              <option v-for="ev in tournament.events" :key="ev.id" :value="ev.id">
-                {{ ev.name }} ({{ ev.team_count }} Tim • {{ ev.timer_seconds }}s)
+              <option
+                v-for="ev in tournament.events"
+                :key="ev.id"
+                :value="ev.id"
+              >
+                {{ ev.name }} ({{ ev.team_count }} Tim •
+                {{ ev.timer_seconds }}s)
               </option>
             </select>
 
-            <BrutalButton variant="green" size="sm" @click="showCreateEventModal = true">
+            <BrutalButton
+              variant="green"
+              size="sm"
+              @click="showCreateEventModal = true"
+            >
               <Plus class="w-4 h-4" />
               Buat Event Baru
             </BrutalButton>
           </div>
         </div>
 
-        <div v-if="tournament.activeEvent" class="flex items-center gap-2.5 flex-wrap">
-          <BrutalButton variant="purple" size="sm" @click="showTeamSetupModal = true">
+        <div
+          v-if="tournament.activeEvent"
+          class="flex items-center gap-2.5 flex-wrap"
+        >
+          <BrutalButton
+            variant="purple"
+            size="sm"
+            @click="showTeamSetupModal = true"
+          >
             <Users class="w-4 h-4" />
             Setup Tim & Bagan
           </BrutalButton>
-          <BrutalButton variant="yellow" size="sm" @click="showImportModal = true">
+          <BrutalButton
+            variant="yellow"
+            size="sm"
+            @click="showImportModal = true"
+          >
             <Upload class="w-4 h-4" />
-            Import Soal (.JSON / .CSV)
+            Import Soal
           </BrutalButton>
         </div>
       </BrutalCard>
 
       <!-- Empty State -->
-      <BrutalCard v-if="!tournament.activeEvent && !tournament.loading" class="text-center py-12 space-y-4">
+      <BrutalCard
+        v-if="!tournament.activeEvent && !tournament.loading"
+        class="text-center py-12 space-y-4"
+      >
         <h2 class="text-2xl font-extrabold uppercase">Belum Ada Event Aktif</h2>
         <p class="text-sm font-semibold text-neutral-700 max-w-md mx-auto">
-          Buat event baru untuk memulai turnamen PROTIC 100 (mendukung format 4, 6, atau 8 tim).
+          Buat event baru untuk memulai turnamen PROTIC 100 (mendukung format 4,
+          6, atau 8 tim).
         </p>
-        <BrutalButton variant="green" size="lg" @click="showCreateEventModal = true">
+        <BrutalButton
+          variant="green"
+          size="lg"
+          @click="showCreateEventModal = true"
+        >
           + Buat Event Pertama
         </BrutalButton>
       </BrutalCard>
@@ -213,14 +250,18 @@ async function handleLogout() {
         <!-- Status Cards -->
         <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
           <BrutalCard padding="p-4" bg="bg-white">
-            <div class="text-xs font-extrabold uppercase text-neutral-600">Format Peserta</div>
+            <div class="text-xs font-extrabold uppercase text-neutral-600">
+              Format Peserta
+            </div>
             <div class="font-mono-num text-2xl font-extrabold mt-1">
               {{ tournament.activeEvent.team_count }} Tim
             </div>
           </BrutalCard>
 
           <BrutalCard padding="p-4" bg="bg-white">
-            <div class="text-xs font-extrabold uppercase text-neutral-600">Timer Tebakan</div>
+            <div class="text-xs font-extrabold uppercase text-neutral-600">
+              Timer Tebakan
+            </div>
             <div class="font-mono-num text-2xl font-extrabold mt-1">
               {{ tournament.activeEvent.timer_seconds }} Detik
             </div>
@@ -230,16 +271,21 @@ async function handleLogout() {
             padding="p-4"
             :bg="hasRequiredQuestions ? 'bg-[#00E5A0]' : 'bg-[#FFF9DB]'"
           >
-            <div class="text-xs font-extrabold uppercase text-neutral-800">Soal Utama</div>
+            <div class="text-xs font-extrabold uppercase text-neutral-800">
+              Soal Utama
+            </div>
             <div class="font-mono-num text-2xl font-extrabold mt-1">
               {{ tournament.mainQuestionsCount }} / {{ requiredMainCount }}
             </div>
           </BrutalCard>
 
           <BrutalCard padding="p-4" bg="bg-white">
-            <div class="text-xs font-extrabold uppercase text-neutral-600">Soal Cadangan</div>
+            <div class="text-xs font-extrabold uppercase text-neutral-600">
+              Soal Cadangan
+            </div>
             <div class="font-mono-num text-2xl font-extrabold mt-1">
-              {{ tournament.unusedBackupCount }} <span class="text-sm font-bold">Siap</span>
+              {{ tournament.unusedBackupCount }}
+              <span class="text-sm font-bold">Siap</span>
             </div>
           </BrutalCard>
         </div>
@@ -250,9 +296,16 @@ async function handleLogout() {
         >
           <p class="text-sm font-extrabold inline-flex items-center gap-2">
             <AlertTriangle class="w-5 h-5 shrink-0" />
-            Soal utama belum lengkap ({{ tournament.mainQuestionsCount }}/{{ requiredMainCount }}). Silakan import soal terlebih dahulu sebelum membuka Operator Console.
+            Soal utama belum lengkap ({{ tournament.mainQuestionsCount }}/{{
+              requiredMainCount
+            }}). Silakan import soal terlebih dahulu sebelum membuka Operator
+            Console.
           </p>
-          <BrutalButton variant="black" size="sm" @click="showImportModal = true">
+          <BrutalButton
+            variant="black"
+            size="sm"
+            @click="showImportModal = true"
+          >
             Import Soal Sekarang
           </BrutalButton>
         </div>
@@ -262,7 +315,9 @@ async function handleLogout() {
 
         <!-- Bagan Pertandingan -->
         <div class="space-y-3">
-          <h2 class="text-xl font-extrabold uppercase">Bagan & Daftar Pertandingan</h2>
+          <h2 class="text-xl font-extrabold uppercase">
+            Bagan & Daftar Pertandingan
+          </h2>
           <BracketTree
             :matches="tournament.matches"
             :teams="tournament.teams"
@@ -283,7 +338,9 @@ async function handleLogout() {
     >
       <form class="space-y-4" @submit.prevent="handleCreateEvent">
         <div class="space-y-1.5">
-          <label class="block text-sm font-extrabold uppercase">Nama Event</label>
+          <label class="block text-sm font-extrabold uppercase"
+            >Nama Event</label
+          >
           <input
             v-model="newEventName"
             type="text"
@@ -295,7 +352,9 @@ async function handleLogout() {
 
         <div class="grid grid-cols-2 gap-4">
           <div class="space-y-1.5">
-            <label class="block text-sm font-extrabold uppercase">Format Tim</label>
+            <label class="block text-sm font-extrabold uppercase"
+              >Format Tim</label
+            >
             <select
               v-model.number="newEventTeamCount"
               class="w-full px-3.5 py-2.5 bg-white border-[3px] border-black rounded-md font-bold focus:outline-none"
@@ -307,7 +366,9 @@ async function handleLogout() {
           </div>
 
           <div class="space-y-1.5">
-            <label class="block text-sm font-extrabold uppercase">Timer (Detik)</label>
+            <label class="block text-sm font-extrabold uppercase"
+              >Timer (Detik)</label
+            >
             <input
               v-model.number="newEventTimer"
               type="number"
@@ -320,9 +381,15 @@ async function handleLogout() {
         </div>
 
         <div class="flex justify-end gap-3 pt-2">
-          <BrutalButton variant="white" @click="showCreateEventModal = false">Batal</BrutalButton>
-          <BrutalButton type="submit" variant="green" :disabled="tournament.loading">
-            {{ tournament.loading ? 'Membuat...' : 'Buat Event' }}
+          <BrutalButton variant="white" @click="showCreateEventModal = false"
+            >Batal</BrutalButton
+          >
+          <BrutalButton
+            type="submit"
+            variant="green"
+            :disabled="tournament.loading"
+          >
+            {{ tournament.loading ? "Membuat..." : "Buat Event" }}
           </BrutalButton>
         </div>
       </form>
@@ -350,4 +417,3 @@ async function handleLogout() {
     />
   </div>
 </template>
-
