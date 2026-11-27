@@ -20,7 +20,13 @@ const quiz = computed(() => state.value.quizState)
 watch(
   () => state.value.quizState?.strikeOverlayTick,
   (newVal, oldVal) => {
-    if (newVal && newVal !== oldVal) {
+    // Hanya tampilkan overlay X jika ada kenaikan strikeOverlayTick saat sudah berada di mode quiz
+    if (
+      state.value.presenterMode === 'quiz' &&
+      oldVal !== undefined &&
+      newVal !== undefined &&
+      newVal > oldVal
+    ) {
       showStrikeOverlay.value = true
       if (overlayTimer !== null) clearTimeout(overlayTimer)
       overlayTimer = window.setTimeout(() => {

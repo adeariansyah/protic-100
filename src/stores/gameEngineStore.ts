@@ -317,6 +317,7 @@ export const useGameEngineStore = defineStore('gameEngine', () => {
     revealZeroPointsMode.value = false
     usedBackupQuestionIds.value = []
     q2TurnSwapped.value = false
+    strikeOverlayTick.value = 0
     history.value = []
 
     return true
@@ -325,7 +326,7 @@ export const useGameEngineStore = defineStore('gameEngine', () => {
   /**
    * Tombol "Start Pertandingan":
    * Mengubah status match -> 'in_progress', set liveMatchId & presenterMode='quiz',
-   * dan langsung mem-broadcast state papan kuis match ini ke PresenterView.
+   * langsung mem-broadcast state papan kuis, dan otomatis menjalankan countdown timer.
    */
   function startMatchLive() {
     if (!match.value) return
@@ -334,17 +335,18 @@ export const useGameEngineStore = defineStore('gameEngine', () => {
       match.value.status = 'in_progress'
       tournament.setMatchInProgressLocally(match.value.id)
     }
+    strikeOverlayTick.value = 0
     liveMatchId.value = match.value.id
     presenterMode.value = 'quiz'
     winnerBannerData.value = null
     persistLocalMatchProgress()
     publishControlTransition(buildQuizBoardState())
+    startTimer()
   }
 
   /**
    * Tombol Saklar "Go Live" (Toggle):
-   * - Jika tidak live pada match ini -> set liveMatchId = match.id, presenterMode = 'quiz', broadcast state.
-   * - Jika sedang live pada match ini -> set presenterMode = 'standby', liveMatchId = null.
+   * Hanya mengatur tayangan proyektor (ON AIR / STANDBY) tanpa menjalankan timer.
    */
   function toggleGoLive() {
     if (!match.value) return
@@ -355,6 +357,7 @@ export const useGameEngineStore = defineStore('gameEngine', () => {
       winnerBannerData.value = null
       publishControlTransition(null)
     } else {
+      strikeOverlayTick.value = 0
       liveMatchId.value = match.value.id
       presenterMode.value = 'quiz'
       winnerBannerData.value = null
@@ -381,6 +384,10 @@ export const useGameEngineStore = defineStore('gameEngine', () => {
       scoreB.value += pts
       q.awardedTo[index] = 'B'
     }
+
+    // Otomatis pause dan reset timer saat jawaban benar di-reveal
+    stopTimerInterval()
+    timerRemaining.value = timerSeconds.value
 
     sound.playReveal()
     syncQuizBoardIfLive()

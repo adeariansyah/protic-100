@@ -11,6 +11,7 @@ import {
 } from 'lucide-vue-next'
 import { useAuthStore } from '../stores/authStore'
 import { useTournamentStore } from '../stores/tournamentStore'
+import { useOfflineQueue } from '../composables/useOfflineQueue'
 import type { ParsedQuestionInput, Team, TeamCount } from '../types'
 import {
   computePodium,
@@ -28,6 +29,7 @@ import QuestionImportModal from '../components/dashboard/QuestionImportModal.vue
 const router = useRouter()
 const auth = useAuthStore()
 const tournament = useTournamentStore()
+const offlineQueue = useOfflineQueue()
 
 const showCreateEventModal = ref(false)
 const showTeamSetupModal = ref(false)
@@ -59,6 +61,7 @@ const hasRequiredQuestions = computed(
 )
 
 onMounted(async () => {
+  await offlineQueue.flushQueue()
   await tournament.fetchEvents()
 })
 

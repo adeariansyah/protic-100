@@ -172,7 +172,7 @@ async function handleCompleteMatch() {
 
           <!-- Kontrol Tayangan Proyektor -->
           <BrutalButton
-            v-if="!engine.isLiveOnCurrentMatch"
+            v-if="!engine.isLiveOnCurrentMatch || engine.match?.status === 'pending'"
             variant="purple"
             size="sm"
             @click="engine.startMatchLive()"

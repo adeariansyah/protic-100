@@ -89,7 +89,44 @@ export const useTournamentStore = defineStore('tournament', () => {
       teams.value = bundle.teams
       matches.value = bundle.matches
       questions.value = bundle.questions
-      saveBundleLocally(bundle)
+
+      // Terapkan ulang hasil match yang masih mengantre di sync_queue agar tidak tertimpa data lama dari D1
+      try {
+        const rawQueue = localStorage.getItem('protic100_sync_queue')
+        if (rawQueue) {
+          const queued = JSON.parse(rawQueue) as Array<{
+            matchId: string
+            score_a: number
+            score_b: number
+            winner_team_id: string
+            loser_team_id: string
+            used_backup_question_ids?: string[]
+          }>
+          for (const item of queued) {
+            completeMatchLocally(
+              item.matchId,
+              item.score_a,
+              item.score_b,
+              item.winner_team_id,
+              item.loser_team_id
+            )
+            if (Array.isArray(item.used_backup_question_ids)) {
+              for (const qId of item.used_backup_question_ids) {
+                markBackupUsedLocally(qId)
+              }
+            }
+          }
+        }
+      } catch {
+        // Ignore malformed queue
+      }
+
+      saveBundleLocally({
+        event: activeEvent.value,
+        teams: teams.value,
+        matches: matches.value,
+        questions: questions.value,
+      })
     } catch (err) {
       error.value = err instanceof Error ? err.message : 'Gagal memuat bundel'
       loadBundleFromLocal()
